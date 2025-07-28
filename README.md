@@ -14,7 +14,7 @@
 ##  Установка
 # Клонируй проект:
 ```bash
-git clone <repo_link>
+git clone https://github.com/sva273/final_movies.git
 cd final_movies
 ```
 
