@@ -43,8 +43,11 @@ def get_mysql_connection() -> pymysql.connections.Connection:
 # Обёртка для выполнения SQL-запросов с безопасной обработкой ошибок
 def fetch_movies(query: str, params: Tuple = ()) -> List[Dict[str, Any]]:
     """
-    Выполняет SQL-запрос и возвращает результаты в виде списка словарей.
-    При ошибке выполнения возвращает пустой список.
+    Выполняет SQL-запрос.
+
+    :param query: Строка запроса SQL
+    :param params: параметры запроса
+    :return: список результатов
     """
     try:
         with get_mysql_connection() as connection:
