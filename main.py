@@ -1,12 +1,12 @@
 # Импорт функций для поиска
-from final_movies.all_searches import (
+from all_searches import (
     search_by_keyword_workflow,
     search_by_genre_and_year_workflow,
     search_by_rating_workflow,
 )
 
 # Импорт функций для отображения логов и статистики
-from final_movies.log_stats import (
+from log_stats import (
     display_top_searches,
     display_last_unique_searches,
     display_last_rating_searches,

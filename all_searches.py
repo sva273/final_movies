@@ -1,14 +1,14 @@
 from typing import Dict, Tuple
 from dotenv import load_dotenv
 from prettytable import PrettyTable
-from final_movies.mysql_connector import (
+from mysql_connector import (
     search_movies,
     get_min_max_years_for_genre,
     get_all_genres,
     get_genre_movie_count,
 )
-from .log_writer import log_search
-from .formatter import paginate_results
+from log_writer import log_search
+from formatter import paginate_results
 
 # Загружаем переменные окружения
 load_dotenv()
