@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
-from log_writer import collection
-from mysql_connector import get_all_genres
-from all_searches import available_ratings
+from final_movies.log_writer import collection
+from final_movies.mysql_connector import get_all_genres
+from final_movies.all_searches import available_ratings
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -140,17 +140,14 @@ def display_last_rating_searches() -> None:
     """
     Показывает 5 последних поисков по рейтингу MPAA.
     """
-    print("\n=== Last 5 Rating Searches ===")
     try:
-        cursor = (
+        print("\n=== Last 5 Rating Searches ===")
+        last_rating_searches = (
             collection.find({"search_type": "rating"}).sort("timestamp", -1).limit(5)
         )
-
-        for idx, doc in enumerate(cursor, 1):
-            rating_code = doc["params"]["rating"]
-            rating_name = available_ratings.get(rating_code, rating_code)
-            results_count = doc["results_count"]
-            print(f"{idx}. Rating: {rating_name} | {results_count} results")
-
+        for i, log in enumerate(last_rating_searches, 1):
+            rating = log["params"]["rating"]
+            results_count = log["results_count"]
+            print(f"{i}. Rating: {rating} | {results_count} results")
     except Exception as e:
         print(f"❌ Error fetching logs: {e}")
