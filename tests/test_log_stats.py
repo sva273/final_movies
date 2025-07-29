@@ -4,9 +4,14 @@ from final_movies import log_stats
 
 
 class TestLogStats(unittest.TestCase):
+
     @patch("final_movies.log_stats.collection")
     @patch("builtins.print")
     def test_display_top_searches_keyword(self, mock_print, mock_collection):
+        """
+        Тест: отображение самых популярных keyword-запросов.
+        Проверяет правильность вывода и вызов aggregate.
+        """
         mock_collection.aggregate.return_value = [
             {"_id": {"keyword": "Matrix"}, "count": 3},
             {"_id": {"keyword": "Inception"}, "count": 2},
@@ -22,6 +27,9 @@ class TestLogStats(unittest.TestCase):
     @patch("final_movies.log_stats.collection")
     @patch("builtins.print")
     def test_display_last_unique_searches_keyword(self, mock_print, mock_collection):
+        """
+        Тест: отображение последних уникальных keyword-запросов.
+        """
         mock_collection.aggregate.return_value = [
             {
                 "_id": {"search_type": "keyword", "params": {"keyword": "Matrix"}},
@@ -38,6 +46,9 @@ class TestLogStats(unittest.TestCase):
     @patch("final_movies.log_stats.collection")
     @patch("builtins.print")
     def test_display_last_rating_searches(self, mock_print, mock_collection):
+        """
+        Тест: отображение последних поисков по рейтингу.
+        """
         mock_collection.find.return_value.sort.return_value.limit.return_value = [
             {
                 "params": {"rating": "PG-13"},
@@ -50,15 +61,23 @@ class TestLogStats(unittest.TestCase):
         mock_print.assert_any_call("\n=== Last 5 Rating Searches ===")
         mock_print.assert_any_call("1. Rating: PG-13 | 4 results")
 
-    @patch("final_movies.log_stats.collection.aggregate", side_effect=Exception("DB error"))
+    @patch(
+        "final_movies.log_stats.collection.aggregate", side_effect=Exception("DB error")
+    )
     @patch("builtins.print")
     def test_error_handling_aggregate(self, mock_print, _):
+        """
+        Тест: обработка ошибки при использовании aggregate.
+        """
         log_stats.display_top_searches()
         mock_print.assert_any_call("❌ Error fetching logs: DB error")
 
     @patch("final_movies.log_stats.collection.find", side_effect=Exception("DB fail"))
     @patch("builtins.print")
     def test_error_handling_find(self, mock_print, _):
+        """
+        Тест: обработка ошибки при использовании find.
+        """
         log_stats.display_last_rating_searches()
         mock_print.assert_any_call("❌ Error fetching logs: DB fail")
 

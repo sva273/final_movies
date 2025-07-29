@@ -4,9 +4,14 @@ from final_movies import log_writer
 
 
 class TestLogWriter(unittest.TestCase):
+
     @patch("final_movies.log_writer.collection")
     @patch("builtins.print")
     def test_log_search_success(self, mock_print, mock_collection):
+        """
+        Тест успешного логирования запроса:
+        проверяет, что insert_one вызывается и ID записи печатается.
+        """
         mock_insert_result = MagicMock(inserted_id="abc123")
         mock_collection.insert_one.return_value = mock_insert_result
 
@@ -22,6 +27,10 @@ class TestLogWriter(unittest.TestCase):
     @patch("final_movies.log_writer.collection")
     @patch("builtins.print")
     def test_log_search_failure(self, mock_print, mock_collection):
+        """
+        Тест неудачного логирования (исключение при insert_one):
+        проверяет, что ошибка обрабатывается и выводится сообщение.
+        """
         mock_collection.insert_one.side_effect = Exception("DB error")
 
         log_writer.log_search(
