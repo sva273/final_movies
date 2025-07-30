@@ -66,7 +66,6 @@ def fetch_movies(query: str, params: Tuple = ()) -> List[Dict[str, Any]]:
         return []
 
 
-@lru_cache(maxsize=1)
 def get_all_genres() -> List[Dict[str, Any]]:
     """
     Возвращает список всех жанров, у которых есть хотя бы один фильм.
