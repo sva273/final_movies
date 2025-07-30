@@ -60,19 +60,15 @@ def paginate_results(
             f"\n=== Found {len(results)} movies | Page {page + 1} of {total_pages} ==="
         )
         print(table)
-        try:
-            # Запрашиваем команду у пользователя
-            command = (
-                input(
-                    "Enter command (n = next, p = prev, g <number> = go to, q = quit): "
-                )
-                .strip()
-                .lower()
+
+        # Запрашиваем команду у пользователя
+        command = (
+            input(
+                "Enter command (n = next, p = prev, g <number> = go to, q = quit): "
             )
-        except KeyboardInterrupt:
-            # Обработка прерывания Ctrl+C — аккуратно выходим из цикла
-            print("\n❌ Interrupted by user. Exiting pagination.")
-            break
+            .strip()
+            .lower()
+        )
 
         if not command:
             # Если пользователь нажал Enter без ввода — предупреждаем
@@ -96,7 +92,7 @@ def paginate_results(
                 if 0 <= target < total_pages:
                     page = target  # Переход на указанную страницу
                 else:
-                    print("⚠️ Invalid page number.")
+                    print(f"⚠️ Page number must be between 1 and {total_pages}.")
             except ValueError:
                 print("⚠️ Please enter a valid page number after 'g'.")
         elif command == "q":
