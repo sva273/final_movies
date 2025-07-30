@@ -56,7 +56,8 @@ def fetch_movies(query: str, params: Tuple = ()) -> List[Dict[str, Any]]:
         with get_mysql_connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, params)
-                return cursor.fetchall()
+                result = cursor.fetchall()
+                return result if isinstance(result, list) else []
     except pymysql.ProgrammingError as e:
         logging.error(f"SQL execution error: {e}")
         return []
