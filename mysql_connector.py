@@ -74,6 +74,7 @@ def get_all_genres() -> List[Dict[str, Any]]:
 
     :return: Список жанров (genre_id и name)
     """
+    # noinspection SqlNoDataSourceInspection
     query = """
         SELECT c.category_id AS genre_id, c.name
         FROM category c
@@ -94,6 +95,7 @@ def get_min_max_years_for_genre(genre_id: int) -> Tuple[Optional[int], Optional[
     :param genre_id: ID жанра (category_id)
     :return: кортеж из двух элементов (min_year, max_year), либо (None, None) при отсутствии данных
     """
+    # noinspection SqlNoDataSourceInspection
     query = """
         SELECT MIN(f.release_year) AS min_year, MAX(f.release_year) AS max_year
         FROM film f
@@ -113,6 +115,7 @@ def get_genre_movie_count(genre_id: int) -> int:
     :param genre_id: ID жанра
     :return: число фильмов в жанре
     """
+    # noinspection SqlNoDataSourceInspection
     query = """
         SELECT COUNT(DISTINCT f.film_id) AS count
         FROM film f
@@ -148,6 +151,7 @@ def search_movies(
     :param rating: рейтинг (G, PG, PG-13, R, NC-17)
     :return: список фильмов, соответствующих фильтрам
     """
+    # noinspection SqlNoDataSourceInspection
     query = """
         SELECT DISTINCT f.title, f.release_year, f.rating
         FROM film f
