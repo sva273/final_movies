@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional, Tuple
 from prettytable import PrettyTable
-from mysql_connector import get_min_max_years_for_genre, get_genre_movie_count
+from final_movies.mysql_connector import get_min_max_years_for_genre, get_genre_movie_count
 
 
 def paginate_results(
