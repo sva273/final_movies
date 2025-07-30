@@ -3,15 +3,15 @@ import logging
 from functools import lru_cache
 from typing import Optional, Dict, Any, List, Tuple
 
-# Работа с переменными окружения
+# Загрузка переменных окружения
 from dotenv import load_dotenv
 
-# Работа с MySQL
+# Импорт библиотеки для работы с MySQL
 import pymysql
 import pymysql.cursors
 
 
-# Настройка логирования (уровень INFO)
+# Настройка базового логирования
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
 )
@@ -22,8 +22,10 @@ load_dotenv()
 
 def get_mysql_connection() -> pymysql.connections.Connection:
     """
-    Создает и возвращает подключение к MySQL с параметрами из .env.
-    Завершает выполнение программы при ошибке подключения.
+    Создаёт подключение к MySQL с использованием параметров из .env.
+    При ошибке подключения выводит сообщение в лог и вызывает исключение.
+
+    :return: Объект подключения к базе данных
     """
     try:
         # Подключение к БД с помощью параметров из окружения
@@ -32,8 +34,8 @@ def get_mysql_connection() -> pymysql.connections.Connection:
             user=os.getenv("MYSQL_USER"),
             password=os.getenv("MYSQL_PASSWORD"),
             database=os.getenv("MYSQL_DATABASE"),
-            cursorclass=pymysql.cursors.DictCursor,
-            autocommit=True,
+            cursorclass=pymysql.cursors.DictCursor,  # Результаты будут в виде словарей
+            autocommit=True,  # Автоматическая фиксация транзакций
         )
     except pymysql.MySQLError as e:
         logging.error(f"MySQL connection error: {e}")
@@ -43,11 +45,12 @@ def get_mysql_connection() -> pymysql.connections.Connection:
 # Обёртка для выполнения SQL-запросов с безопасной обработкой ошибок
 def fetch_movies(query: str, params: Tuple = ()) -> List[Dict[str, Any]]:
     """
-    Выполняет SQL-запрос.
+    Универсальный исполнитель SQL-запросов SELECT.
+    Выполняет запрос и возвращает результат в виде списка словарей.
 
-    :param query: Строка запроса SQL
-    :param params: параметры запроса
-    :return: список результатов
+    :param query: SQL-запрос
+    :param params: параметры запроса (для подстановки)
+    :return: список словарей с результатами запроса
     """
     try:
         with get_mysql_connection() as connection:
@@ -65,7 +68,10 @@ def fetch_movies(query: str, params: Tuple = ()) -> List[Dict[str, Any]]:
 @lru_cache(maxsize=1)
 def get_all_genres() -> List[Dict[str, Any]]:
     """
-    Получение жанров, для которых есть хотя бы один фильм.
+    Возвращает список всех жанров, у которых есть хотя бы один фильм.
+    Использует кэширование, чтобы не выполнять запрос повторно.
+
+    :return: Список жанров (genre_id и name)
     """
     query = """
         SELECT c.category_id AS genre_id, c.name
@@ -82,8 +88,10 @@ def get_all_genres() -> List[Dict[str, Any]]:
 
 def get_min_max_years_for_genre(genre_id: int) -> Tuple[Optional[int], Optional[int]]:
     """
-    Возвращает кортеж (минимальный год, максимальный год) выпуска фильмов для жанра.
-    При отсутствии данных возвращает (None, None).
+    Определяет минимальный и максимальный год выпуска фильмов для заданного жанра.
+
+    :param genre_id: ID жанра (category_id)
+    :return: кортеж из двух элементов (min_year, max_year), либо (None, None) при отсутствии данных
     """
     query = """
         SELECT MIN(f.release_year) AS min_year, MAX(f.release_year) AS max_year
@@ -99,7 +107,10 @@ def get_min_max_years_for_genre(genre_id: int) -> Tuple[Optional[int], Optional[
 
 def get_genre_movie_count(genre_id: int) -> int:
     """
-    Возвращает количество фильмов в указанном жанре.
+    Возвращает количество уникальных фильмов, связанных с указанным жанром.
+
+    :param genre_id: ID жанра
+    :return: число фильмов в жанре
     """
     query = """
         SELECT COUNT(DISTINCT f.film_id) AS count
@@ -121,13 +132,20 @@ def search_movies(
     rating: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Осуществляет поиск фильмов по переданным параметрам:
-    - keyword: часть названия фильма.
-    - genre_id: ID жанра.
-    - year_from, year_to: диапазон годов выпуска.
-    - rating: рейтинг фильма.
+    Выполняет поиск фильмов по одному или нескольким критериям:
+    - по ключевому слову в названии
+    - по ID жанра
+    - по диапазону годов выпуска
+    - по рейтингу MPAA.
 
-    Возвращает список найденных фильмов или пустой список при ошибке.
+    Все параметры являются необязательными и могут комбинироваться.
+
+    :param keyword: Часть названия фильма (без учёта регистра)
+    :param genre_id: ID жанра
+    :param year_from: начальный год
+    :param year_to: конечный год
+    :param rating: рейтинг (G, PG, PG-13, R, NC-17)
+    :return: список фильмов, соответствующих фильтрам
     """
     query = """
         SELECT DISTINCT f.title, f.release_year, f.rating
