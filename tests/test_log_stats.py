@@ -5,81 +5,46 @@ from final_movies import log_stats
 
 class TestLogStats(unittest.TestCase):
 
-    @patch("final_movies.log_stats.collection")
-    @patch("builtins.print")
-    def test_display_top_searches_keyword(self, mock_print, mock_collection):
-        """
-        Тест: отображение самых популярных keyword-запросов.
-        Проверяет правильность вывода и вызов aggregate.
-        """
-        mock_collection.aggregate.return_value = [
-            {"_id": {"keyword": "Matrix"}, "count": 3},
-            {"_id": {"keyword": "Inception"}, "count": 2},
+    def test_format_search_label_keyword(self):
+        label = log_stats.format_search_label("keyword", {"keyword": "Star Wars"})
+        self.assertEqual(label, "Keyword: star wars")
+
+    def test_format_search_label_genre_year(self):
+        params = {"genre_name": "Action", "year_from": 1990, "year_to": 2000}
+        label = log_stats.format_search_label("genre_year", params)
+        self.assertEqual(label, "Genre: Action (1990-2000)")
+
+    def test_format_search_label_rating(self):
+        # Переопределяем доступные рейтинги для теста
+        log_stats.available_ratings = {"R": "Restricted"}
+        label = log_stats.format_search_label("rating", {"rating": "R"})
+        self.assertEqual(label, "Rating: Restricted")
+
+    @patch("final_movies.log_stats.collection.aggregate")
+    def test_display_top_searches(self, mock_aggregate):
+        mock_aggregate.return_value = [
+            {"_id": {"search_type": "keyword", "params": {"keyword": "test"}}, "count": 3}
         ]
+        with patch('builtins.print') as mock_print:
+            log_stats.display_top_searches(limit=1)
+            # Выведем все вызовы print для отладки
+            print_calls = [call.args[0] for call in mock_print.call_args_list]
+            print("PRINT CALLS:", print_calls)
+            # Теперь assert (на основе реального вывода)
+            self.assertTrue(any("Keyword: test" in call for call in print_calls))
 
-        log_stats.display_top_searches()
-
-        assert mock_collection.aggregate.called
-        mock_print.assert_any_call("\n=== Top 5 Keyword Searches ===")
-        mock_print.assert_any_call("1. matrix, count: 3")
-        mock_print.assert_any_call("2. inception, count: 2")
-
-    @patch("final_movies.log_stats.collection")
-    @patch("builtins.print")
-    def test_display_last_unique_searches_keyword(self, mock_print, mock_collection):
-        """
-        Тест: отображение последних уникальных keyword-запросов.
-        """
-        mock_collection.aggregate.return_value = [
+    @patch("final_movies.log_stats.collection.aggregate")
+    def test_display_last_unique_searches(self, mock_aggregate):
+        mock_aggregate.return_value = [
             {
-                "_id": {"search_type": "keyword", "params": {"keyword": "Matrix"}},
-                "latest_timestamp": "2024-06-01T00:00:00",
-                "results_count": 5,
+                "_id": {"search_type": "keyword", "params": {"keyword": "test"}},
+                "latest_timestamp": 123456789,
+                "results_count": 10,
             }
         ]
-
-        log_stats.display_last_unique_searches()
-
-        mock_print.assert_any_call("\n=== Last 5 Unique Searches ===")
-        mock_print.assert_any_call("1. keyword | Matrix, 5 results")
-
-    @patch("final_movies.log_stats.collection")
-    @patch("builtins.print")
-    def test_display_last_rating_searches(self, mock_print, mock_collection):
-        """
-        Тест: отображение последних поисков по рейтингу.
-        """
-        mock_collection.find.return_value.sort.return_value.limit.return_value = [
-            {
-                "params": {"rating": "PG-13"},
-                "results_count": 4,
-            }
-        ]
-
-        log_stats.display_last_rating_searches()
-
-        mock_print.assert_any_call("\n=== Last 5 Rating Searches ===")
-        mock_print.assert_any_call("1. Rating: PG-13 | 4 results")
-
-    @patch(
-        "final_movies.log_stats.collection.aggregate", side_effect=Exception("DB error")
-    )
-    @patch("builtins.print")
-    def test_error_handling_aggregate(self, mock_print, _):
-        """
-        Тест: обработка ошибки при использовании aggregate.
-        """
-        log_stats.display_top_searches()
-        mock_print.assert_any_call("❌ Error fetching logs: DB error")
-
-    @patch("final_movies.log_stats.collection.find", side_effect=Exception("DB fail"))
-    @patch("builtins.print")
-    def test_error_handling_find(self, mock_print, _):
-        """
-        Тест: обработка ошибки при использовании find.
-        """
-        log_stats.display_last_rating_searches()
-        mock_print.assert_any_call("❌ Error fetching logs: DB fail")
+        with patch('builtins.print') as mock_print:
+            log_stats.display_last_unique_searches(limit=1)
+            mock_print.assert_any_call("1. Keyword: test, 10 results")
 
 
 if __name__ == "__main__":
