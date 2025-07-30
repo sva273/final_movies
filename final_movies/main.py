@@ -33,7 +33,11 @@ def main() -> None:
         print("5. Exit")
 
         # Получение пользовательского выбора
-        choice = input("Select an option (1-5): ").strip()
+        try:
+            choice = input("Select an option (1-5): ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nInput interrupted. Exiting Movie Finder. Goodbye!")
+            break
 
         if choice == "1":
             # Запуск поиска по ключевому слову
@@ -52,7 +56,11 @@ def main() -> None:
                 print("2. Show 5 Last Unique Searches")
                 print("3. Back to Main Menu")
 
-                sub_choice = input("Select an option (1-3): ").strip()
+                try:
+                    sub_choice = input("Select an option (1-3): ").strip()
+                except (KeyboardInterrupt, EOFError):
+                    print("\nInput interrupted. Returning to Main Menu.")
+                    break
 
                 if sub_choice == "1":
                     # Показать топ 5 популярных поисков
