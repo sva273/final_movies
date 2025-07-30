@@ -42,8 +42,15 @@ def get_mysql_connection() -> pymysql.connections.Connection:
         raise ConnectionError(f"MySQL connection error: {e}")
 
 
+def is_nonempty_result(result: Any) -> bool:
+    """
+    Проверяет, что результат запроса — непустой список.
+    """
+    return result is not None and isinstance(result, list) and len(result) > 0
+
+
 # Обёртка для выполнения SQL-запросов с безопасной обработкой ошибок
-def fetch_movies(query: str, params: Tuple = ()) -> List[Dict[str, Any]]:
+def execute_select_query(query: str, params: Tuple = ()) -> List[Dict[str, Any]]:
     """
     Универсальный исполнитель SQL-запросов SELECT.
     Выполняет запрос и возвращает результат в виде списка словарей.
@@ -66,6 +73,7 @@ def fetch_movies(query: str, params: Tuple = ()) -> List[Dict[str, Any]]:
         return []
 
 
+@lru_cache(maxsize=1)
 def get_all_genres() -> List[Dict[str, Any]]:
     """
     Возвращает список всех жанров, у которых есть хотя бы один фильм.
@@ -73,7 +81,6 @@ def get_all_genres() -> List[Dict[str, Any]]:
 
     :return: Список жанров (genre_id и name)
     """
-    # noinspection SqlNoDataSourceInspection
     query = """
         SELECT c.category_id AS genre_id, c.name
         FROM category c
@@ -84,7 +91,7 @@ def get_all_genres() -> List[Dict[str, Any]]:
         )
         ORDER BY c.name;
     """
-    return fetch_movies(query)
+    return execute_select_query(query)
 
 
 def get_min_max_years_for_genre(genre_id: int) -> Tuple[Optional[int], Optional[int]]:
@@ -94,15 +101,14 @@ def get_min_max_years_for_genre(genre_id: int) -> Tuple[Optional[int], Optional[
     :param genre_id: ID жанра (category_id)
     :return: кортеж из двух элементов (min_year, max_year), либо (None, None) при отсутствии данных
     """
-    # noinspection SqlNoDataSourceInspection
     query = """
         SELECT MIN(f.release_year) AS min_year, MAX(f.release_year) AS max_year
         FROM film f
         JOIN film_category fc ON f.film_id = fc.film_id
         WHERE fc.category_id = %s
     """
-    result = fetch_movies(query, (genre_id,))
-    if result:
+    result = execute_select_query(query, (genre_id,))
+    if is_nonempty_result(result):
         return result[0]["min_year"], result[0]["max_year"]
     return None, None
 
@@ -114,15 +120,14 @@ def get_genre_movie_count(genre_id: int) -> int:
     :param genre_id: ID жанра
     :return: число фильмов в жанре
     """
-    # noinspection SqlNoDataSourceInspection
     query = """
         SELECT COUNT(DISTINCT f.film_id) AS count
         FROM film f
         JOIN film_category fc ON f.film_id = fc.film_id
         WHERE fc.category_id = %s
     """
-    result = fetch_movies(query, (genre_id,))
-    if result:
+    result = execute_select_query(query, (genre_id,))
+    if is_nonempty_result(result):
         return result[0]["count"]
     return 0
 
@@ -150,7 +155,6 @@ def search_movies(
     :param rating: рейтинг (G, PG, PG-13, R, NC-17)
     :return: список фильмов, соответствующих фильтрам
     """
-    # noinspection SqlNoDataSourceInspection
     query = """
         SELECT DISTINCT f.title, f.release_year, f.rating
         FROM film f
@@ -182,4 +186,4 @@ def search_movies(
     # Сортировка результатов
     query += " ORDER BY f.release_year, f.title"
 
-    return fetch_movies(query, tuple(params))
+    return execute_select_query(query, tuple(params))
