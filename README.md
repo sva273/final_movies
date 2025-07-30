@@ -48,18 +48,20 @@ python main.py
 - pymysql, pymongo
 - python-dotenv
 - prettytable (форматирование вывода)
+- pytest (для unit тестов)
+- typing
 
 ## Структура проекта
 ```
 final_movies
-├── tests                      # Папка с тестами.
+├── tests                        # Папка с тестами.
 │   ├── __init__.py 
-│   ├── test_log_writer.py     # Тесты для логирования запросов.
-│   ├── test_log_stats.py      # Тесты для статистики логов.
-│   ├── test_mysql_connector.py # Тесты для MySQL соединений.
-│   ├── test_all_searches.py   # Тесты для поиска фильмов.
-│   ├── test_main.py           # Тесты для menu.
-│   └── test_formatter.py    # Тесты по форматированию таблиц.
+│   ├── test_log_writer.py       # Тесты для логирования запросов.
+│   ├── test_log_stats.py        # Тесты для статистики логов.
+│   ├── test_mysql_connector.py  # Тесты для MySQL соединений.
+│   ├── test_all_searches.py     # Тесты для поиска фильмов.
+│   ├── test_main.py             # Тесты для menu.
+│   └── test_formatter.py        # Тесты по форматированию таблиц.
 ├── final_movies              
 │   ├── __init__.py 
 │   ├── log_writer.py     
