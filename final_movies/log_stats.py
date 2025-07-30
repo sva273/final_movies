@@ -20,13 +20,15 @@ def format_search_label(search_type: str, params: dict) -> str:
     :return: Строковое представление запроса (для вывода пользователю)
     """
     if search_type == "keyword":
-        return f"Keyword: {params['keyword'].lower()}"
+        keyword = params.get("keyword", "").lower()
+        return f"Keyword: {keyword}"
     elif search_type == "genre_year":
-        return (
-            f"Genre: {params['genre_name']} ({params['year_from']}-{params['year_to']})"
-        )
+        genre_name = params.get("genre_name", "Unknown genre")
+        year_from = params.get("year_from", "??")
+        year_to = params.get("year_to", "??")
+        return f"Genre: {genre_name} ({year_from}-{year_to})"
     elif search_type == "rating":
-        rating_code = params.get("rating")
+        rating_code = params.get("rating", "Unknown rating")
         rating_name = available_ratings.get(rating_code, rating_code)
         return f"Rating: {rating_name}"
     else:
@@ -97,7 +99,7 @@ def display_last_unique_searches(limit: int = 5) -> None:
                 "$group": {
                     "_id": {"search_type": "$search_type", "params": "$params"},
                     "latest_timestamp": {"$max": "$timestamp"},
-                    "results_count": {"$first": "$results_count"},
+                    "results_count": {"$max": "$results_count"},
                 }
             },
             {"$sort": {"latest_timestamp": -1}},
