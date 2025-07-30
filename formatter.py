@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from prettytable import PrettyTable
 from mysql_connector import get_min_max_years_for_genre, get_genre_movie_count
 
+
 def paginate_results(
     results: List[Dict[str, Any]],
     page_size: int = 10,
@@ -21,88 +22,110 @@ def paginate_results(
     :param columns: Названия колонок таблицы (если не указаны — используются стандартные)
     :return: None
     """
-    # Проверка, что входные данные — список
+    # Проверка, что пришёл список — если нет, выводим предупреждение и выходим
     if not isinstance(results, list):
         print("⚠️ Invalid data passed to paginate_results: expected a list.")
         return
 
+    # Вычисляем количество страниц, округляя вверх
     total_pages = (len(results) + page_size - 1) // page_size
     if total_pages == 0:
         print("⚠️ No data to display.")
         return
 
-    page = 0
+    page = 0  # Начинаем с первой страницы (индекс 0)
 
     while True:
-        # Определение границ текущей страницы
+        # Определяем срез списка для текущей страницы
         start = page * page_size
         end = start + page_size
         page_results = results[start:end]
 
-        # Создание таблицы
+        # Создаём объект PrettyTable и задаём заголовки колонок
         table = PrettyTable()
-        # Названия колонок: либо пользовательские, либо стандартные
         table.field_names = columns or ["#", "Title", "Release Year", "Rating"]
 
-        # Добавление строк в таблицу с учётом глобального индекса
+        # Добавляем в таблицу фильмы текущей страницы с глобальным номером
         for idx, movie in enumerate(page_results, start=1 + start):
             row = [
-                idx,
-                movie.get("title", "N/A"),
-                movie.get("release_year", "N/A"),
-                movie.get("rating", "N/A"),
+                idx,  # Номер фильма в общем списке
+                movie.get("title", "N/A"),  # Название фильма или "N/A", если нет
+                movie.get("release_year", "N/A"),  # Год выпуска или "N/A"
+                movie.get("rating", "N/A"),  # Рейтинг или "N/A"
             ]
             table.add_row(row)
 
-        # Вывод информации о текущей странице и самой таблицы
-        print(f"\n=== Found {len(results)} movies | Page {page + 1} of {total_pages} ===")
+        # Выводим информацию о количестве фильмов, текущей странице и таблицу
+        print(
+            f"\n=== Found {len(results)} movies | Page {page + 1} of {total_pages} ==="
+        )
         print(table)
         try:
+            # Запрашиваем команду у пользователя
             command = (
-                input("Enter command (n = next, p = prev, g <number> = go to, q = quit): ")
+                input(
+                    "Enter command (n = next, p = prev, g <number> = go to, q = quit): "
+                )
                 .strip()
                 .lower()
             )
         except KeyboardInterrupt:
+            # Обработка прерывания Ctrl+C — аккуратно выходим из цикла
             print("\n❌ Interrupted by user. Exiting pagination.")
             break
 
-        # Обработка пользовательского ввода команд управления страницами
-        # Если пользователь просто нажал Enter — предупреждаем и продолжаем цикл
         if not command:
+            # Если пользователь нажал Enter без ввода — предупреждаем
             print("⚠️ Please enter a command (n, p, g <number>, or q).")
             continue
 
-        elif command == "n":
-            # Следующая страница
+        # Обработка команд переключения страниц
+        if command == "n":
             if page + 1 < total_pages:
                 page += 1
             else:
                 print("✅ Already on the last page.")
         elif command == "p":
-            # Предыдущая страница
             if page > 0:
                 page -= 1
             else:
                 print("✅ Already on the first page.")
         elif command.startswith("g "):
-            # Перейти к введенной странице
             try:
-                target = int(command.split()[1]) - 1
+                target = int(command.split()[1]) - 1  # Переводим к индексу страницы
                 if 0 <= target < total_pages:
-                    page = target
+                    page = target  # Переход на указанную страницу
                 else:
                     print("⚠️ Invalid page number.")
             except ValueError:
                 print("⚠️ Please enter a valid page number after 'g'.")
         elif command == "q":
-            # Завершить просмотр
-            break
+            break  # Выход из просмотра
         else:
-            # Неверная команда
             print("⚠️ Invalid command.")
 
-def display_genre_table(genres: List[Dict[str, Any]]) -> Dict[int, Tuple[int, int, str]]:
+
+def print_pretty_table(
+    headers: List[str], rows: List[List[Any]], title: str = ""
+) -> None:
+    """
+    Универсальная функция вывода таблицы с заголовком.
+
+    :param headers: Список заголовков столбцов.
+    :param rows: Список строк, каждая — список значений.
+    :param title: Заголовок таблицы (необязательно).
+    """
+    if title:
+        print(f"\n{title}")  # Печать заголовка, если он задан
+    table = PrettyTable(headers)  # Создаём таблицу с заголовками
+    for row in rows:
+        table.add_row(row)  # Добавляем все строки
+    print(table)  # Выводим таблицу
+
+
+def display_genre_table(
+    genres: List[Dict[str, Any]],
+) -> Dict[int, Tuple[int, int, str]]:
     """
     Отображает таблицу жанров с количеством фильмов и годами выпуска.
     Также возвращает словарь с подробной информацией по каждому жанру.
@@ -110,21 +133,27 @@ def display_genre_table(genres: List[Dict[str, Any]]) -> Dict[int, Tuple[int, in
     :param genres: Список жанров (каждый жанр — словарь с genre_id и name)
     :return: Словарь: genre_id → (min_year, max_year, name)
     """
-    table = PrettyTable(["ID", "Genre", "Years", "Count"])
-    genre_data = Dict[int, Tuple[int, int, str]] = {}
+    genre_data: Dict[int, Tuple[int, int, str]] = (
+        {}
+    )  # Словарь для хранения данных о жанрах
+    rows = []  # Пустой список строк для таблицы
 
     for g in genres:
-        genre_id = g["genre_id"]
-        name = g["name"]
+        genre_id = g["genre_id"]  # ID жанра
+        name = g["name"]  # Название жанра
+        # Получаем минимальный и максимальный год выпуска фильмов данного жанра
         min_year, max_year = get_min_max_years_for_genre(genre_id)
+        # Получаем количество фильмов в данном жанре
         count = get_genre_movie_count(genre_id)
-        genre_data[genre_id] = (min_year, max_year, name)
-        table.add_row([genre_id, name, f"{min_year}-{max_year}", count])
+        genre_data[genre_id] = (min_year, max_year, name)  # Сохраняем в словарь
+        # Формируем строку таблицы с жанром, годами и количеством фильмов
+        rows.append([genre_id, name, f"{min_year}-{max_year}", count])
 
-    print("\n🎬 Available genres:")
-    print(table)
-
-    return genre_data
+    # Выводим таблицу жанров с заголовком
+    print_pretty_table(
+        ["ID", "Genre", "Years", "Count"], rows, title="🎬 Available genres:"
+    )
+    return genre_data  # Возвращаем словарь для дальнейшего использования
 
 
 def display_ratings_table(ratings: Dict[str, str]) -> Dict[int, str]:
@@ -132,14 +161,17 @@ def display_ratings_table(ratings: Dict[str, str]) -> Dict[int, str]:
     Формирует и отображает таблицу MPAA-рейтингов.
     Возвращает словарь: номер строки → код рейтинга (напр. 1 → "G").
     """
-    table = PrettyTable(["#", "Code", "Description"])
-    index_to_code = {}
+    index_to_code = {}  # Словарь для сопоставления номера строки и кода рейтинга
+    rows = []  # Список строк для таблицы
 
     for idx, (code, description) in enumerate(ratings.items(), start=1):
-        table.add_row([idx, code, description])
-        index_to_code[idx] = code
+        rows.append(
+            [idx, code, description]
+        )  # Добавляем строку с индексом, кодом и описанием
+        index_to_code[idx] = code  # Запоминаем соответствие индекса и кода
 
-    print("\n🎞 Available MPAA Ratings:")
-    print(table)
-
-    return index_to_code
+    # Выводим таблицу с MPAA-рейтинговыми кодами и описаниями
+    print_pretty_table(
+        ["#", "Code", "Description"], rows, title="🎞 Available MPAA Ratings:"
+    )
+    return index_to_code  # Возвращаем словарь для выбора пользователем
