@@ -52,12 +52,6 @@ python main.py
 ## Структура проекта
 ```
 final_movies
-├── main.py
-├── mysql_connector.py
-├── log_writer.py
-├── log_stats.py
-├── formatter.py
-├── all_searches.py
 ├── tests                      # Папка с тестами.
 │   ├── __init__.py 
 │   ├── test_log_writer.py     # Тесты для логирования запросов.
@@ -65,7 +59,7 @@ final_movies
 │   ├── test_mysql_connector.py # Тесты для MySQL соединений.
 │   ├── test_all_searches.py   # Тесты для поиска фильмов.
 │   └── test_formatter.py    # Тесты по форматированию таблиц.
-├── final_movies               # Папка с файлами проекта для тестов.
+├── final_movies              
 │   ├── __init__.py 
 │   ├── log_writer.py     
 │   ├── log_stats.py      
