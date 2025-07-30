@@ -10,10 +10,17 @@ def paginate_results(
     """
     Постраничный вывод результатов поиска через PrettyTable.
 
+    Позволяет пользователю переключаться между страницами через консольные команды:
+    - 'n': следующая страница
+    - 'p': предыдущая страница
+    - 'g <номер>': переход к указанной странице
+    - 'q': выход из режима просмотра
+
     :param results: Список словарей с результатами.
     :param page_size: Количество строк на странице.
     :param columns: Пользовательские заголовки таблицы (по умолчанию стандартные).
     """
+    # Проверка, что входные данные — список
     if not isinstance(results, list):
         print("⚠️ Invalid data passed to paginate_results: expected a list.")
         return
@@ -26,13 +33,17 @@ def paginate_results(
     page = 0
 
     while True:
+        # Определение границ текущей страницы
         start = page * page_size
         end = start + page_size
         page_results = results[start:end]
 
+        # Создание таблицы
         table = PrettyTable()
+        # Названия колонок: либо пользовательские, либо стандартные
         table.field_names = columns or ["#", "Title", "Release Year", "Rating"]
 
+        # Добавление строк в таблицу с учётом глобального индекса
         for idx, movie in enumerate(page_results, start=1 + start):
             row = [
                 idx,
@@ -42,9 +53,8 @@ def paginate_results(
             ]
             table.add_row(row)
 
-        print(
-            f"\n=== Found {len(results)} movies | Page {page + 1} of {total_pages} ==="
-        )
+        # Вывод информации о текущей странице и самой таблицы
+        print(f"\n=== Found {len(results)} movies | Page {page + 1} of {total_pages} ===")
         print(table)
 
         command = (
@@ -53,17 +63,21 @@ def paginate_results(
             .lower()
         )
 
+        # Обработка пользовательского ввода команд управления страницами
         if command == "n":
+            # Следующая страница
             if page + 1 < total_pages:
                 page += 1
             else:
                 print("✅ Already on the last page.")
         elif command == "p":
+            # Предыдущая страница
             if page > 0:
                 page -= 1
             else:
                 print("✅ Already on the first page.")
         elif command.startswith("g "):
+            # Перейти к введенной странице
             try:
                 target = int(command.split()[1]) - 1
                 if 0 <= target < total_pages:
@@ -73,8 +87,10 @@ def paginate_results(
             except ValueError:
                 print("⚠️ Please enter a valid page number after 'g'.")
         elif command == "q":
+            # Завершить просмотр
             break
         else:
+            # Неверная команда
             print("⚠️ Invalid command.")
 
 
