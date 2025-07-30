@@ -2,7 +2,7 @@
 from dotenv import load_dotenv  # Для загрузки переменных окружения из .env-файла
 from log_writer import collection  # MongoDB-коллекция для хранения логов поиска
 from mysql_connector import get_all_genres  # Функция для получения жанров из базы MySQL
-from all_searches import available_ratings  # Словарь с расшифровкой MPAA рейтингов
+from final_movies.all_searches import available_ratings  # Словарь с расшифровкой MPAA рейтингов
 
 # Загружаем переменные окружения
 load_dotenv()
