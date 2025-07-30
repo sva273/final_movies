@@ -2,13 +2,13 @@ from typing import Dict, Tuple
 from dotenv import load_dotenv
 from prettytable import PrettyTable
 from mysql_connector import (
-    search_movies,
-    get_min_max_years_for_genre,
-    get_all_genres,
-    get_genre_movie_count,
+    search_movies,  # Основная функция поиска фильмов
+    get_min_max_years_for_genre,  # Получение мин/макс годов по жанру
+    get_all_genres,  # Получение всех жанров из базы данных
+    get_genre_movie_count,  # Подсчёт фильмов в жанре
 )
-from log_writer import log_search
-from formatter import paginate_results
+from log_writer import log_search  # Логирование поискового запроса
+from formatter import paginate_results  # Функция постраничного вывода результатов
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -25,13 +25,19 @@ available_ratings: Dict[str, str] = {
 
 def select_genre() -> Tuple[int, Tuple[int, int], str]:
     """
-    Выбор жанра пользователем с выводом таблицы через PrettyTable.
-    :return: genre_id, genre_name, (min_year, max_year), count
+    Позволяет пользователю выбрать жанр из списка доступных.
+
+    Выводит таблицу жанров с их ID, годами выпуска и количеством фильмов.
+    После выбора возвращает кортеж:
+    (genre_id, (min_year, max_year), genre_name)
+
+    :return: выбранный genre_id, диапазон лет, название жанра
     """
     genres = get_all_genres()
     table = PrettyTable(["ID", "Genre", "Years", "Count"])
     genre_data = {}
 
+    # Построение таблицы жанров
     for g in genres:
         genre_id = g["genre_id"]
         name = g["name"]
@@ -43,8 +49,10 @@ def select_genre() -> Tuple[int, Tuple[int, int], str]:
     print("\n🎬 Available genres:")
     print(table)
 
+    # Проверка допустимых ID
     valid_ids = genre_data.keys()
 
+    # Запрос ID у пользователя
     while True:
         genre_id_input = input("Enter genre ID: ").strip()
         if genre_id_input.isdigit():
@@ -60,7 +68,14 @@ def select_genre() -> Tuple[int, Tuple[int, int], str]:
 
 def get_year_range(min_year: int, max_year: int) -> Tuple[int, int]:
     """
-    Запрашивает у пользователя корректный диапазон годов.
+    Запрашивает у пользователя диапазон лет и проверяет корректность ввода.
+
+    Требует, чтобы оба года были четырёхзначными числами
+    и входили в допустимый диапазон min_year - max_year.
+
+    :param min_year: Минимально возможный год
+    :param max_year: максимально возможный год
+    :return: кортеж (год_начала, год_окончания)
     """
     while True:
         year_from_input = input(f"Enter start year ({min_year}-{max_year}): ").strip()
@@ -76,31 +91,49 @@ def get_year_range(min_year: int, max_year: int) -> Tuple[int, int]:
 
 def search_by_keyword_workflow() -> None:
     """
-    Поиск фильмов по ключевому слову.
+    Запрашивает ключевое слово у пользователя и выполняет поиск фильмов.
+
+    После поиска логирует запрос и отображает результаты с пагинацией.
+    Если ничего не найдено — выводит соответствующее сообщение.
     """
     keyword = input("Enter keyword to search for movies: ").strip()
+
+    # Проверка: если пользователь не ввёл ничего (или только пробелы), завершаем функцию
     if not keyword:
         print("⚠️ Keyword cannot be empty.")
         return
 
+    # Поиск по ключевому слову
     movies = search_movies(keyword=keyword)
+
+    # Логирование поискового запроса
     log_search("keyword", {"keyword": keyword.lower()}, len(movies))
 
     if not movies:
         print("🔍 Nothing found for your request.")
         return
 
+    # Отображение результатов с постраничной навигацией
     paginate_results(movies)
 
 
 def search_by_genre_and_year_workflow() -> None:
     """
-    Поиск по жанру и диапазону годов.
+    Запрашивает у пользователя жанр и диапазон годов, затем ищет фильмы.
+
+    После поиска логирует параметры и выводит результаты.
+    Если ничего не найдено — сообщает об этом пользователю.
     """
+    # Выбор жанра
     genre_id, (min_year, max_year), genre_name = select_genre()
+
+    # Выбор диапазона годов в рамках выбранного жанра
     year_from, year_to = get_year_range(min_year, max_year)
+
+    # Поиск фильмов по параметрам
     movies = search_movies(genre_id=genre_id, year_from=year_from, year_to=year_to)
 
+    # Логирование запроса
     log_search(
         "genre_year",
         {
@@ -115,18 +148,26 @@ def search_by_genre_and_year_workflow() -> None:
     if not movies:
         print("🔍 No movies found for this genre and year range.")
         return
+
+    # Отображение результатов с постраничной навигацией
     paginate_results(movies)
 
 
 def search_by_rating_workflow() -> None:
     """
-    Поиск фильмов по рейтингу MPAA.
+    Показывает список MPAA рейтингов, позволяет выбрать один
+    и выполняет поиск фильмов по выбранному рейтингу.
+
+    Логирует запрос и отображает результаты или сообщение об отсутствии результатов.
     """
     print("\nAvailable MPAA Ratings:")
     ratings_list = list(available_ratings.items())
+
+    # Отображение рейтингов
     for idx, (code, desc) in enumerate(available_ratings.items(), 1):
         print(f"{idx}. {code} - {desc}")
 
+    # Запрос выбора у пользователя
     while True:
         choice = input("Select a rating by number: ").strip()
         if choice.isdigit():
@@ -139,11 +180,15 @@ def search_by_rating_workflow() -> None:
             f"Invalid selection. Please enter a number between 1 and {len(ratings_list)}."
         )
 
+    # Поиск по рейтингу
     movies = search_movies(rating=selected_rating)
+
+    # Логирование запроса
     log_search("rating", {"rating": selected_rating}, len(movies))
 
     if not movies:
         print("🔍 No movies found for the selected rating.")
         return
 
+    # Отображение результатов с постраничной навигацией
     paginate_results(movies)
