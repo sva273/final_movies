@@ -1,15 +1,14 @@
 # Импорт функций для поиска
 from all_searches import (
-    search_by_keyword_workflow,
-    search_by_genre_and_year_workflow,
-    search_by_rating_workflow,
+    search_by_keyword_workflow,  # Поиск по ключевому слову
+    search_by_genre_and_year_workflow,  # Поиск по жанру и диапазону лет
+    search_by_rating_workflow,  # Поиск по рейтингу MPAA
 )
 
 # Импорт функций для отображения логов и статистики
 from log_stats import (
-    display_top_searches,
-    display_last_unique_searches,
-    display_last_rating_searches,
+    display_top_searches,  # Отображение самых популярных запросов
+    display_last_unique_searches,  # Отображение последних уникальных запросов
 )
 
 
@@ -35,11 +34,15 @@ def main() -> None:
 
         # Получение пользовательского выбора
         choice = input("Select an option (1-5): ").strip()
+
         if choice == "1":
+            # Запуск поиска по ключевому слову
             search_by_keyword_workflow()
         elif choice == "2":
+            # Запуск поиска по жанру и диапазону лет
             search_by_genre_and_year_workflow()
         elif choice == "3":
+            # Запуск поиска по рейтингу MPAA
             search_by_rating_workflow()
         elif choice == "4":
             # Подменю логов поиска
@@ -47,26 +50,28 @@ def main() -> None:
                 print("\n=== Search Activity Menu ===")
                 print("1. Show TOP 5 Popular Searches")
                 print("2. Show 5 Last Unique Searches")
-                print("3. Show 5 Last MPAA rating Searches")
-                print("4. Back to Main Menu")
+                print("3. Back to Main Menu")
 
-                sub_choice = input("Select an option (1-4): ").strip()
+                sub_choice = input("Select an option (1-3): ").strip()
 
                 if sub_choice == "1":
+                    # Показать топ 5 популярных поисков
                     display_top_searches()
                 elif sub_choice == "2":
+                    # Показать 5 последних уникальных поисков
                     display_last_unique_searches()
                 elif sub_choice == "3":
-                    display_last_rating_searches()
-                elif sub_choice == "4":
                     # Вернуться в главное меню
                     break
                 else:
+                    # Обработка неверного ввода
                     print("Invalid option. Please try again.")
         elif choice == "5":
+            # Завершение программы
             print("Exiting Movie Finder. Goodbye!")
             break
         else:
+            # Обработка неверного ввода
             print("Invalid option. Please try again.")
 
 
