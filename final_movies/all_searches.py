@@ -23,6 +23,16 @@ available_ratings: Dict[str, str] = {
 }
 
 
+def get_user_input(prompt: str) -> str:
+    """
+    Унифицированный ввод от пользователя с обрезкой пробелов.
+
+    :param prompt: Текст запроса
+    :return: Строка ввода без пробелов по краям
+    """
+    return input(prompt).strip()
+
+
 def select_genre() -> Tuple[int, Tuple[int, int], str]:
     """
     Позволяет пользователю выбрать жанр из списка доступных.
@@ -54,7 +64,7 @@ def select_genre() -> Tuple[int, Tuple[int, int], str]:
 
     # Запрос ID у пользователя
     while True:
-        genre_id_input = input("Enter genre ID: ").strip()
+        genre_id_input = get_user_input("Enter genre ID: ")
         if genre_id_input.isdigit():
             genre_id = int(genre_id_input)
             if genre_id in genre_data:
@@ -78,8 +88,8 @@ def get_year_range(min_year: int, max_year: int) -> Tuple[int, int]:
     :return: кортеж (год_начала, год_окончания)
     """
     while True:
-        year_from_input = input(f"Enter start year ({min_year}-{max_year}): ").strip()
-        year_to_input = input(f"Enter end year ({min_year}-{max_year}): ").strip()
+        year_from_input = get_user_input(f"Enter start year ({min_year}-{max_year}): ")
+        year_to_input = get_user_input(f"Enter end year ({min_year}-{max_year}): ")
         if year_from_input.isdigit() and year_to_input.isdigit():
             year_from = int(year_from_input)
             year_to = int(year_to_input)
@@ -96,7 +106,7 @@ def search_by_keyword_workflow() -> None:
     После поиска записывает запрос и отображает результаты с пагинацией.
     Если ничего не найдено — выводит соответствующее сообщение.
     """
-    keyword = input("Enter keyword to search for movies: ").strip()
+    keyword = get_user_input("Enter keyword to search for movies: ")
 
     # Проверка: если пользователь не ввёл ничего (или только пробелы), завершаем функцию
     if not keyword:
@@ -174,7 +184,7 @@ def search_by_rating_workflow() -> None:
     selected_rating = None  # Инициализация переменной
 
     while True:
-        choice = input("Select a rating by number: ").strip()
+        choice = get_user_input("Select a rating by number: ")
 
         # Разрешаем только целые числа
         if not choice.isdigit():
