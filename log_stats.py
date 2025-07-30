@@ -1,7 +1,8 @@
-from dotenv import load_dotenv
-from log_writer import collection
-from mysql_connector import get_all_genres
-from all_searches import available_ratings
+# Импорт библиотек и модулей
+from dotenv import load_dotenv  # Для загрузки переменных окружения из .env-файла
+from log_writer import collection  # MongoDB-коллекция для хранения логов поиска
+from mysql_connector import get_all_genres  # Функция для получения жанров из базы MySQL
+from all_searches import available_ratings  # Словарь с расшифровкой MPAA рейтингов
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -11,45 +12,48 @@ genres = get_all_genres()
 genre_map = {g["genre_id"]: g["name"] for g in genres}
 
 
-# === Форматирующие функции для вывода ===
+def format_search_label(search_type: str, params: dict) -> str:
+    """Формирует строку для отображения запроса в логах в зависимости от типа поиска.
 
-
-def format_keyword_label(d: dict) -> str:
-    # Возвращает ключевое слово в нижнем регистре из агрегированного словаря
-    return d["keyword"].lower()
-
-
-def format_genre_year_label(d: dict) -> str:
-    # Формирует подпись жанра и диапазона годов для вывода в статистике
-    return f"{d['genre_name']} ({d['year_from']}-{d['year_to']})"
-
-
-# === Универсальный агрегатор ===
-
-
-def display_aggregate_logs(
-    title: str,
-    match_filter: dict,
-    group_fields: list,
-    label_format_func,
-    limit: int = 5,
-) -> None:
+    :param search_type: Тип запроса (keyword, genre_year, rating и т.д.)
+    :param params: Словарь параметров, переданных при поиске
+    :return: Строковое представление запроса (для вывода пользователю)
     """
-     Обобщённый вывод агрегированных логов (топы по ключевым словам, жанрам и т.д.)
+    if search_type == "keyword":
+        return f"Keyword: {params['keyword'].lower()}"
+    elif search_type == "genre_year":
+        return (
+            f"Genre: {params['genre_name']} ({params['year_from']}-{params['year_to']})"
+        )
+    elif search_type == "rating":
+        rating_code = params.get("rating")
+        rating_name = available_ratings.get(rating_code, rating_code)
+        return f"Rating: {rating_name}"
+    else:
+        return f"{search_type}: {params}"
 
-    :param title: Заголовок раздела
-    :param match_filter: Фильтр MongoDB ($match)
-    :param group_fields: Поля для группировки
-    :param label_format_func: Функция форматирования метки
-    :param limit: Ограничение на количество результатов
+
+def display_top_searches(limit: int = 5) -> None:
     """
-    print(f"\n=== {title} ===")
+    Выводит ТОП самых популярных поисковых запросов, независимо от их типа.
+
+    Группирует по типу и параметрам поиска, сортирует по количеству запросов
+    и отображает ограниченное число самых частых записей.
+
+    :param limit: Максимальное количество записей для отображения
+    """
+    print("\n=== Top Popular Searches (All Types) ===")
+
     try:
-        stages = [
-            {"$match": match_filter},
+        # MongoDB aggregation stage:
+        # 1. Группировка по search_type и параметрам запроса
+        # 2. Подсчёт количества повторений
+        # 3. Сортировка по убыванию
+        # 4. Ограничение количества результатов
+        stage = [
             {
                 "$group": {
-                    "_id": {field: f"$params.{field}" for field in group_fields},
+                    "_id": {"search_type": "$search_type", "params": "$params"},
                     "count": {"$sum": 1},
                 }
             },
@@ -57,46 +61,38 @@ def display_aggregate_logs(
             {"$limit": limit},
         ]
 
-        # Вывод результата
-        for idx, entry in enumerate(collection.aggregate(stages), 1):
-            label = label_format_func(entry["_id"])
+        results = collection.aggregate(stage)
+
+        # Вывод результатов в консоль
+        for idx, entry in enumerate(results, 1):
+            search_type = entry["_id"]["search_type"]
+            params = entry["_id"]["params"]
             count = entry["count"]
+            label = format_search_label(search_type, params)
             print(f"{idx}. {label}, count: {count}")
 
     except Exception as e:
         print(f"❌ Error fetching logs: {e}")
 
 
-# === Специализированные отображения ===
-
-
-def display_top_searches() -> None:
+def display_last_unique_searches(limit: int = 5) -> None:
     """
-    Отображает топ 5 запросов: по ключевым словам и по жанрам + годам.
-    """
-    display_aggregate_logs(
-        "Top 5 Keyword Searches",
-        {"search_type": "keyword"},
-        ["keyword"],
-        format_keyword_label,
-    )
+    Показывает последние уникальные поисковые запросы по типу и параметрам.
 
-    display_aggregate_logs(
-        "Top 5 Genre + Year Searches",
-        {"search_type": "genre_year"},
-        ["genre_name", "year_from", "year_to"],
-        format_genre_year_label,
-    )
+    Каждая уникальная комбинация search_type + параметры отображается
+    с датой последнего запроса и количеством результатов.
 
-
-def display_last_unique_searches() -> None:
+    :param limit: Максимальное количество уникальных запросов для отображения
     """
-    Отображает 5 последних уникальных поисков (по типу и параметрам).
-    """
-    print("\n=== Last 5 Unique Searches ===")
+    print("\n=== Last Unique Searches ===")
 
     try:
-        stages = [
+        # Aggregation stage:
+        # 1. Группировка по типу и параметрам запроса
+        # 2. Получение последнего timestamp и первого количества результатов
+        # 3. Сортировка по дате (timestamp)
+        # 4. Лимитирование количества записей
+        stage = [
             {
                 "$group": {
                     "_id": {"search_type": "$search_type", "params": "$params"},
@@ -105,52 +101,18 @@ def display_last_unique_searches() -> None:
                 }
             },
             {"$sort": {"latest_timestamp": -1}},
-            {"$limit": 5},
+            {"$limit": limit},
         ]
 
-        results = list(collection.aggregate(stages))
+        results = collection.aggregate(stage)
 
+        # Вывод уникальных запросов
         for idx, entry in enumerate(results, 1):
             search_type = entry["_id"]["search_type"]
             params = entry["_id"]["params"]
             results_count = entry["results_count"]
-
-            if search_type == "keyword":
-                print(f"{idx}. keyword | {params['keyword']}, {results_count} results")
-
-            elif search_type == "genre_year":
-                print(
-                    f"{idx}. genre_year | {params['genre_name']}, {params['year_from']}-{params['year_to']},"
-                    f" {results_count} results"
-                )
-
-            elif search_type == "rating":
-                rating_code = params["rating"]
-                rating_name = available_ratings.get(rating_code, rating_code)
-                print(f"{idx}. rating | {rating_name}, {results_count} results")
-
-            else:
-                print(f"{idx}. {search_type} | {params}, {results_count} results")
-
-    except Exception as e:
-        print(f"❌ Error fetching logs: {e}")
-
-
-def display_last_rating_searches() -> None:
-    """
-    Показывает 5 последних поисков по рейтингу MPAA.
-    """
-    print("\n=== Last 5 Rating Searches ===")
-    try:
-        cursor = (
-            collection.find({"search_type": "rating"}).sort("timestamp", -1).limit(5)
-        )
-
-        for idx, doc in enumerate(cursor, 1):
-            rating_code = doc["params"]["rating"]
-            rating_name = available_ratings.get(rating_code, rating_code)
-            results_count = doc["results_count"]
-            print(f"{idx}. Rating: {rating_name} | {results_count} results")
+            label = format_search_label(search_type, params)
+            print(f"{idx}. {label}, {results_count} results")
 
     except Exception as e:
         print(f"❌ Error fetching logs: {e}")
