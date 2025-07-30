@@ -64,7 +64,8 @@ final_movies
 │   ├── log_writer.py     
 │   ├── log_stats.py      
 │   ├── mysql_connector.py 
-│   ├── all_searches.py   
+│   ├── all_searches.py  
+│   ├── main.py    
 │   └── formatter.py    
 ├── .env
 ├── requirements.txt
