@@ -83,6 +83,6 @@ class TestMySQLConnector(unittest.TestCase):
         result2 = mysql_connector.get_all_genres()
         self.assertEqual(result1, result2)
 
-    def test_fetch_movies_invalid_sql(self):
-        result = mysql_connector.fetch_movies("SELECT * FROM nonexistent_table")
+    def test_execute_select_query_invalid_sql(self):
+        result = mysql_connector.execute_select_query("SELECT * FROM nonexistent_table")
         self.assertEqual(result, [])
