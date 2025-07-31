@@ -15,11 +15,11 @@ load_dotenv()
 
 # Словарь с расшифровкой кодов MPAA
 available_ratings: Dict[str, str] = {
-    "G": "General Audiences – All ages admitted",
-    "PG": "Parental Guidance Suggested",
-    "PG-13": "Parents Strongly Cautioned",
-    "R": "Restricted",
-    "NC-17": "Adults Only",
+     "G": "👶 General Audiences – All ages admitted",
+    "PG": "👨‍👩‍👧 Parental Guidance Suggested",
+    "PG-13": "⚠️ Parents Strongly Cautioned",
+    "R": "🔞 Restricted – Under 17 requires accompanying parent or adult guardian",
+    "NC-17": "🚫 Adults Only – No one 17 and under admitted"
 }
 
 
