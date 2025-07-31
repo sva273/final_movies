@@ -157,17 +157,24 @@ def display_ratings_table(ratings: Dict[str, str]) -> Dict[int, str]:
     Формирует и отображает таблицу MPAA-рейтингов.
     Возвращает словарь: номер строки → код рейтинга (напр. 1 → "G").
     """
-    index_to_code = {}  # Словарь для сопоставления номера строки и кода рейтинга
-    rows = []  # Список строк для таблицы
+    index_to_code = {}
+    table = PrettyTable()
+    # Подменяем заголовок Description вручную центрированным вариантом
+    desc_header = "Description"
+    desc_width = max(len(desc_header), max(len(d) for d in ratings.values()))
+    centered_desc = desc_header.center(desc_width)
+
+    table.field_names = ["№", "Code", centered_desc]
+
+    # Центр для Code и №, левый край для описания
+    table.align["№"] = "c"
+    table.align["Code"] = "c"
+    table.align[centered_desc] = "l"  # Содержимое описания по левому краю
 
     for idx, (code, description) in enumerate(ratings.items(), start=1):
-        rows.append(
-            [idx, code, description]
-        )  # Добавляем строку с индексом, кодом и описанием
-        index_to_code[idx] = code  # Запоминаем соответствие индекса и кода
+        table.add_row([idx, code, description])
+        index_to_code[idx] = code
 
-    # Выводим таблицу с MPAA-рейтинговыми кодами и описаниями
-    print_pretty_table(
-        ["#", "Code", "Description"], rows, title="🎞 Available MPAA Ratings:"
-    )
-    return index_to_code  # Возвращаем словарь для выбора пользователем
+    print("🎞 Available MPAA Ratings:")
+    print(table)
+    return index_to_code
