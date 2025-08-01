@@ -1,14 +1,15 @@
 from typing import Dict, Tuple
 from dotenv import load_dotenv
-from prettytable import PrettyTable
 from final_movies.mysql_connector import (
     search_movies,  # Основная функция поиска фильмов
-    get_min_max_years_for_genre,  # Получение мин/макс годов по жанру
     get_all_genres,  # Получение всех жанров из базы данных
-    get_genre_movie_count,  # Подсчёт фильмов в жанре
 )
-from final_movies.log_writer import log_search  # Логирование поискового запроса
-from final_movies.formatter import paginate_results, display_ratings_table   # Функция постраничного вывода результатов
+
+# Логирование поискового запроса
+from final_movies.log_writer import log_search
+
+# Функция постраничного вывода результатов
+from final_movies.formatter import paginate_results, display_ratings_table, display_genre_table
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -16,7 +17,7 @@ load_dotenv()
 # Словарь с расшифровкой кодов MPAA
 available_ratings: Dict[str, str] = {
      "G": "👶 General Audiences – All ages admitted",
-    "PG": "👨‍👩‍👧 Parental Guidance Suggested",
+    "PG": "👪 Parental Guidance Suggested",
     "PG-13": "⚠️ Parents Strongly Cautioned",
     "R": "🔞 Restricted – Under 17 requires accompanying parent or adult guardian",
     "NC-17": "🚫 Adults Only – No one 17 and under admitted"
@@ -35,42 +36,47 @@ def get_user_input(prompt: str) -> str:
 
 def select_genre() -> Tuple[int, Tuple[int, int], str]:
     """
-    Позволяет пользователю выбрать жанр из списка доступных.
+    Запрашивает у пользователя выбор жанра из списка доступных жанров.
 
-    Выводит таблицу жанров с их ID, годами выпуска и количеством фильмов.
-    После выбора возвращает кортеж:
-    (genre_id, (min_year, max_year), genre_name)
+    Сначала отображает таблицу жанров с их идентификаторами (ID), диапазоном годов выпуска
+    и количеством фильмов, используя вспомогательную функцию display_genre_table().
+    Затем ожидает корректный ввод от пользователя — ID жанра, присутствующий в таблице.
 
-    :return: выбранный genre_id, диапазон лет, название жанра
+    После успешного ввода возвращает кортеж, содержащий:
+        - идентификатор жанра (genre_id)
+        - кортеж из минимального и максимального годов (min_year, max_year)
+        - название жанра (genre_name)
+
+    :return: Кортеж вида (genre_id, (min_year, max_year), genre_name)
+    :rtype: Tuple[int, Tuple[int, int], str]
+
     """
+    # Получаем список всех жанров из базы данных
     genres = get_all_genres()
-    table = PrettyTable(["ID", "Genre", "Years", "Count"])
-    genre_data = {}
 
-    # Построение таблицы жанров
-    for g in genres:
-        genre_id = g["genre_id"]
-        name = g["name"]
-        min_year, max_year = get_min_max_years_for_genre(genre_id)
-        count = get_genre_movie_count(genre_id)
-        genre_data[genre_id] = (min_year, max_year, name)
-        table.add_row([genre_id, name, f"{min_year}-{max_year}", count])
+    # Формируем и отображаем таблицу жанров, а также получаем вспомогательные данные
+    # Возвращаемый словарь: {genre_id: (min_year, max_year, genre_name)}
+    genre_data = display_genre_table(genres)  # вынесено всё отображение и подсчёты
 
-    print("\n🎬 Available genres:")
-    print(table)
-
-    # Проверка допустимых ID
+    # Извлекаем список допустимых идентификаторов жанров
     valid_ids = genre_data.keys()
 
-    # Запрос ID у пользователя
     while True:
+        # Запрашиваем ID жанра у пользователя
         genre_id_input = get_user_input("Enter genre ID: ")
+
+        # Проверяем, что ввод состоит только из цифр
         if genre_id_input.isdigit():
             genre_id = int(genre_id_input)
+
+            # Проверяем, что введённый ID присутствует среди доступных жанров
             if genre_id in genre_data:
                 min_year, max_year, genre_name = genre_data[genre_id]
+
+                # Возвращаем выбранный жанр и соответствующие данные
                 return genre_id, (min_year, max_year), genre_name
 
+        # В случае некорректного ввода — уведомляем пользователя и повторяем запрос
         print(
             f"Invalid genre ID. Please enter one of: {', '.join(map(str, valid_ids))}"
         )
